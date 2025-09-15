@@ -1,0 +1,13 @@
+# requirements.txt
+
+langchain
+langchain-community
+langchain-huggingface
+sentence-transformers
+faiss-cpu
+transformers
+torch
+lxml
+gradio
+accelerate
+beautifulsoup4
