@@ -13,15 +13,25 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 def create_rag_chain():
 
     # Load the document
-    loader = WebBaseLoader("https://en.wikipedia.org/wiki/Retrieval-augmented_generation")
-    docs = loader.load()
+    URLS = [
+        "https://en.wikipedia.org/wiki/Retrieval-augmented_generation",
+        "https://python.langchain.com/docs/expression_language/how_to/rag",
+        "https://python.langchain.com/docs/how_to#retrieval",
+    ]
+    
+    docs = []
+    for u in URLS:
+        docs.extend(WebBaseLoader(u).load())
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=130)
     splits = text_splitter.split_documents(docs)
 
     emb = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     vs = FAISS.from_documents(splits, embedding=emb)
-    retriever = vs.as_retriever(k=1)
+    retriever = vs.as_retriever(
+        search_type="mmr",
+        search_kwargs={"k": 4, "fetch_k": 24, "lambda_mult": 0.5}
+    )
 
     model_id = "google/flan-t5-large"
     tok = AutoTokenizer.from_pretrained(model_id)
@@ -32,6 +42,7 @@ def create_rag_chain():
         tokenizer=tok,
         max_new_tokens=160,
         min_new_tokens=40,
+        truncation=True, 
     )
     llm = HuggingFacePipeline(pipeline=gen_pipe)
 
